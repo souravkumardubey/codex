@@ -18,10 +18,15 @@ WORKDIR /app
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nestjs
 
-COPY --from=builder /app/dist/apps/api-gateway ./dist
-COPY --from=builder /app/apps/api-gateway/package.json ./
+COPY --from=builder /app/apps/api-gateway/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
+
+RUN rm -rf node_modules/@codex && \
+    for lib in shared logger database queue sandbox; do \
+      mkdir -p node_modules/@codex/$lib && \
+      printf '{"main":"../../dist/libs/%s/src/index.js"}' "$lib" > node_modules/@codex/$lib/package.json; \
+    done
 
 USER nestjs
 
@@ -29,4 +34,4 @@ EXPOSE 4000
 
 ENV NODE_ENV=production
 
-CMD ["node", "dist/src/main"]
+CMD ["node", "dist/apps/api-gateway/src/main"]

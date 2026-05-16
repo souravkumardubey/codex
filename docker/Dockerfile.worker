@@ -21,13 +21,18 @@ RUN apk add --no-cache docker-cli
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 worker
 
-COPY --from=builder /app/dist/apps/worker ./dist
-COPY --from=builder /app/apps/worker/package.json ./
+COPY --from=builder /app/apps/worker/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
+
+RUN rm -rf node_modules/@codex && \
+    for lib in shared logger database queue sandbox; do \
+      mkdir -p node_modules/@codex/$lib && \
+      printf '{"main":"../../dist/libs/%s/src/index.js"}' "$lib" > node_modules/@codex/$lib/package.json; \
+    done
 
 USER worker
 
 ENV NODE_ENV=production
 
-CMD ["node", "dist/src/main"]
+CMD ["node", "dist/apps/worker/src/main"]
