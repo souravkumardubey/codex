@@ -21,7 +21,7 @@ RUN apk add --no-cache docker-cli
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 worker
 
-COPY --from=builder /app/apps/worker/dist ./dist
+COPY --from=builder /app/dist/apps/worker ./dist
 COPY --from=builder /app/apps/worker/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
@@ -30,4 +30,4 @@ USER worker
 
 ENV NODE_ENV=production
 
-CMD ["node", "dist/main"]
+CMD ["node", "dist/src/main"]

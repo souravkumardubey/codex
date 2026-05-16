@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": "../../",
     "baseUrl": ".",
     "paths": {
       "@codex/shared": ["../../libs/shared/src/index.ts"],

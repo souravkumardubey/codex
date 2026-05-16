@@ -16,7 +16,7 @@ WORKDIR /app
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 wsgateway
 
-COPY --from=builder /app/apps/ws-gateway/dist ./dist
+COPY --from=builder /app/dist/apps/ws-gateway ./dist
 COPY --from=builder /app/apps/ws-gateway/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
 
@@ -26,4 +26,4 @@ EXPOSE 4002
 
 ENV NODE_ENV=production
 
-CMD ["node", "dist/main"]
+CMD ["node", "dist/src/main"]
