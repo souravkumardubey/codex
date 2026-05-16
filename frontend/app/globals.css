@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 20% 97%;
+    --foreground: 220 20% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 10%;
+    --primary: 210 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 92%;
+    --secondary-foreground: 220 20% 10%;
+    --muted: 220 14% 92%;
+    --muted-foreground: 220 10% 50%;
+    --accent: 220 14% 92%;
+    --accent-foreground: 220 20% 10%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 14% 88%;
+    --input: 220 14% 88%;
+    --ring: 210 100% 50%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 220 20% 5%;
+    --foreground: 220 10% 90%;
+    --card: 220 20% 8%;
+    --card-foreground: 220 10% 90%;
+    --popover: 220 20% 8%;
+    --popover-foreground: 220 10% 90%;
+    --primary: 210 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 20% 14%;
+    --secondary-foreground: 220 10% 90%;
+    --muted: 220 20% 14%;
+    --muted-foreground: 220 10% 60%;
+    --accent: 220 20% 14%;
+    --accent-foreground: 220 10% 90%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 20% 16%;
+    --input: 220 20% 16%;
+    --ring: 210 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Terminal styles */
+.terminal-output {
+  @apply font-mono text-sm leading-relaxed;
+}
+
+.terminal-output .stdout {
+  @apply text-green-400;
+}
+
+.terminal-output .stderr {
+  @apply text-red-400;
+}
+
+.terminal-output .info {
+  @apply text-blue-400;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground/20 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted-foreground/40;
+}
+
+/* Split pane styling */
+.split-pane {
+  @apply flex h-full overflow-hidden;
+}
+
+.split-pane > .split-pane-left,
+.split-pane > .split-pane-right {
+  @apply overflow-auto;
+}
+
+.split-pane-divider {
+  @apply w-1 bg-border cursor-col-resize hover:bg-primary/50 transition-colors;
+}
+
+/* Monaco editor overrides */
+.monaco-editor .margin {
+  @apply bg-background !important;
+}
