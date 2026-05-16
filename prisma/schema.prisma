@@ -1,0 +1,208 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum ExecutionStatus {
+  PENDING
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  TIMEOUT
+  CANCELLED
+}
+
+enum SubmissionStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  ERROR
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+  EXPERT
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  username     String    @unique
+  passwordHash String    @map("password_hash")
+  role         UserRole  @default(USER)
+  avatarUrl    String?   @map("avatar_url")
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  executions    Execution[]
+  submissions  Submission[]
+  rooms        RoomParticipant[]
+  messages     Message[]
+  tokens       RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  revoked   Boolean  @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model Execution {
+  id         String           @id @default(cuid())
+  userId     String?          @map("user_id")
+  language   String
+  sourceCode String           @map("source_code")
+  stdin      String           @default("")
+  stdout     String           @default("")
+  stderr     String           @default("")
+  runtime    Float?           @map("runtime_ms")
+  memoryUsed Float?           @map("memory_kb")
+  exitCode   Int?             @map("exit_code")
+  status     ExecutionStatus  @default(PENDING)
+  jobId      String?          @map("job_id")
+  error      String?
+  testResults Json?           @map("test_results")
+  createdAt  DateTime         @default(now()) @map("created_at")
+  updatedAt  DateTime         @updatedAt @map("updated_at")
+
+  user       User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  submission Submission?
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("executions")
+}
+
+model Challenge {
+  id           String     @id @default(cuid())
+  title        String
+  slug         String     @unique
+  difficulty   Difficulty @default(MEDIUM)
+  description  String
+  constraints  String?
+  examples     Json       @default("[]")
+  tags         String[]   @default([])
+  popularity   Int        @default(0)
+  isActive     Boolean    @default(true) @map("is_active")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  testCases   TestCase[]
+  submissions Submission[]
+
+  @@index([slug])
+  @@index([difficulty])
+  @@map("challenges")
+}
+
+model TestCase {
+  id              String   @id @default(cuid())
+  challengeId     String   @map("challenge_id")
+  input           String   @default("")
+  expectedOutput  String   @map("expected_output")
+  hidden          Boolean  @default(false)
+  order           Int      @default(0)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@index([challengeId])
+  @@map("test_cases")
+}
+
+model Submission {
+  id           String           @id @default(cuid())
+  userId       String           @map("user_id")
+  challengeId  String           @map("challenge_id")
+  executionId  String           @unique @map("execution_id")
+  code         String
+  language     String
+  score        Int              @default(0)
+  passedTests  Int              @default(0) @map("passed_tests")
+  totalTests   Int              @default(0) @map("total_tests")
+  runtime      Float?           @map("runtime_ms")
+  memory       Float?           @map("memory_kb")
+  status       SubmissionStatus @default(PENDING)
+  createdAt    DateTime         @default(now()) @map("created_at")
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge Challenge  @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  execution Execution  @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([challengeId])
+  @@index([userId, challengeId])
+  @@map("submissions")
+}
+
+model Room {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  code        String   @default("")
+  language    String   @default("javascript")
+  isPrivate   Boolean  @default(false) @map("is_private")
+  inviteCode  String?  @unique @map("invite_code")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  participants RoomParticipant[]
+  messages     Message[]
+
+  @@map("rooms")
+}
+
+model RoomParticipant {
+  id        String   @id @default(cuid())
+  roomId    String   @map("room_id")
+  userId    String   @map("user_id")
+  role      String   @default("member")
+  cursorPos Json?    @map("cursor_pos")
+  isOnline  Boolean  @default(false) @map("is_online")
+  joinedAt  DateTime @default(now()) @map("joined_at")
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@map("room_participants")
+}
+
+model Message {
+  
+  id        String   @id @default(cuid())
+  roomId    String   @map("room_id")
+  userId    String   @map("user_id")
+  content   String
+  type      String   @default("text")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, createdAt])
+  @@map("messages")
+}
