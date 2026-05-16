@@ -1,0 +1,40 @@
+{
+  "name": "codex-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Distributed Code Execution Platform",
+  "workspaces": [
+    "apps/*",
+    "libs/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,css,md}\"",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "prisma db seed",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:build": "docker-compose build",
+    "k8s:apply": "kubectl apply -f k8s/",
+    "clean": "turbo run clean && rm -rf node_modules"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
+  "devDependencies": {
+    "turbo": "^1.13.0",
+    "prettier": "^3.2.0",
+    "typescript": "^5.4.0",
+    "ts-node": "^10.9.0",
+    "@types/node": "^20.11.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.10.0",
+    "prisma": "^5.10.0"
+  }
+}
