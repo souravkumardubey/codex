@@ -2,7 +2,7 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY package.json tsconfig.json turbo.json ./
+COPY package.json package-lock.json tsconfig.json turbo.json ./
 COPY apps/ws-gateway apps/ws-gateway
 COPY libs libs
 
