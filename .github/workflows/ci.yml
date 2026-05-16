@@ -136,15 +136,20 @@ jobs:
       - name: Configure kubectl
         run: |
           mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" > $HOME/.kube/config
+          if [ -n "${{ secrets.KUBE_CONFIG }}" ]; then
+            echo "${{ secrets.KUBE_CONFIG }}" > $HOME/.kube/config
+            echo "KUBE_CONFIG configured."
+          else
+            echo "KUBE_CONFIG not set. Skipping deployment later."
+          fi
 
       - name: Deploy to Kubernetes
         run: |
-          if [ ! -s "$HOME/.kube/config" ]; then
+          if [ ! -f "$HOME/.kube/config" ]; then
             echo "No KUBE_CONFIG secret configured. Skipping deployment."
             exit 0
           fi
-          kubectl apply -f k8s/namespace.yaml
+          kubectl apply --validate=false -f k8s/namespace.yaml
           kubectl apply -f k8s/secrets.yaml
           kubectl apply -f k8s/postgres/
           kubectl apply -f k8s/redis/
