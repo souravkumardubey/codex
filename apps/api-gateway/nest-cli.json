@@ -1,0 +1,9 @@
+{
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src",
+  "entryFile": "apps/api-gateway/src/main",
+  "compilerOptions": {
+    "tsConfigPath": "tsconfig.json",
+    "webpack": false
+  }
+}

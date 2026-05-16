@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "baseUrl": ".",
+    "paths": {
+      "@codex/shared": ["../../libs/shared/src/index.ts"],
+      "@codex/logger": ["../../libs/logger/src/index.ts"],
+      "@codex/database": ["../../libs/database/src/index.ts"],
+      "@codex/queue": ["../../libs/queue/src/index.ts"],
+      "@codex/sandbox": ["../../libs/sandbox/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "test"]
+}
