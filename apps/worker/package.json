@@ -1,0 +1,29 @@
+{
+  "name": "@codex/worker",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "ts-node -r tsconfig-paths/register src/main.ts",
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "test": "jest",
+    "lint": "eslint \"{src,test}/**/*.ts\""
+  },
+  "dependencies": {
+    "@codex/database": "*",
+    "@codex/logger": "*",
+    "@codex/queue": "*",
+    "@codex/sandbox": "*",
+    "@codex/shared": "*",
+    "bullmq": "^5.7.0",
+    "dockerode": "^4.0.2",
+    "ioredis": "^5.3.0",
+    "pino": "^8.19.0",
+    "pino-pretty": "^11.0.0"
+  },
+  "devDependencies": {
+    "@types/dockerode": "^3.3.28",
+    "@types/node": "^20.11.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.4.0"
+  }
+}
