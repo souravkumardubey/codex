@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  namespace: codex
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+        - name: worker
+          image: codex-worker:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: codex-secrets
+                  key: database-url
+            - name: REDIS_URL
+              value: "redis://redis:6379"
+            - name: DOCKER_HOST
+              value: "tcp://docker-socket-proxy:2375"
+            - name: EXECUTION_TIMEOUT
+              value: "30000"
+            - name: MAX_MEMORY
+              value: "512m"
+            - name: QUEUE_CONCURRENCY
+              value: "5"
+          volumeMounts:
+            - name: docker-socket
+              mountPath: /var/run/docker.sock
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1"
+      volumes:
+        - name: docker-socket
+          hostPath:
+            path: /var/run/docker.sock
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: worker
+  namespace: codex
+spec:
+  selector:
+    app: worker
+  ports:
+    - port: 4001
+      targetPort: 4001

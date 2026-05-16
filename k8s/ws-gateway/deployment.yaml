@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ws-gateway
+  namespace: codex
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ws-gateway
+  template:
+    metadata:
+      labels:
+        app: ws-gateway
+    spec:
+      containers:
+        - name: ws-gateway
+          image: codex-ws-gateway:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 4002
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: WS_PORT
+              value: "4002"
+            - name: REDIS_URL
+              value: "redis://redis:6379"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: codex-secrets
+                  key: jwt-secret
+            - name: CORS_ORIGIN
+              value: "https://codex.dev"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ws-gateway
+  namespace: codex
+spec:
+  selector:
+    app: ws-gateway
+  ports:
+    - port: 4002
+      targetPort: 4002
+  type: ClusterIP
