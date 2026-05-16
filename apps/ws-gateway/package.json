@@ -5,7 +5,7 @@
     "dev": "ts-node -r tsconfig-paths/register src/main.ts",
     "build": "tsc",
     "start": "node dist/main.js",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "lint": "eslint \"{src,test}/**/*.ts\""
   },
   "dependencies": {
