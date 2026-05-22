@@ -18,8 +18,9 @@ export class ConfigService {
     return process.env.JWT_REFRESH_EXPIRATION || '7d';
   }
 
-  get corsOrigin(): string {
-    return process.env.CORS_ORIGIN || 'http://localhost:3000';
+  get corsOrigin(): string | string[] {
+    const origin = process.env.CORS_ORIGIN || 'http://localhost:3000';
+    return origin.includes(',') ? origin.split(',').map((s) => s.trim()) : origin;
   }
 
   get databaseUrl(): string {

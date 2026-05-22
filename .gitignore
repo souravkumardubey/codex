@@ -15,3 +15,9 @@ coverage/
 *.pem
 docker-compose.override.yml
 .env
+
+# TypeScript lib build outputs
+libs/*/src/*.js
+libs/*/src/*.js.map
+libs/*/src/*.d.ts
+libs/*/src/*.d.ts.map

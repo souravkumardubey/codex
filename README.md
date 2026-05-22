@@ -1,19 +1,51 @@
 # Codex Platform
 
-A production-grade Distributed Code Execution Platform for securely executing untrusted user code inside isolated Docker sandboxes with distributed workers.
+[![CI/CD Pipeline](https://github.com/souravkumardubey/codex/actions/workflows/ci.yml/badge.svg)](https://github.com/souravkumardubey/codex/actions/workflows/ci.yml)
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://codex.vercel.app)
+[![Docker](https://img.shields.io/badge/docker-compose-2496ED?logo=docker)](https://docs.docker.com/compose)
+[![Next.js](https://img.shields.io/badge/frontend-Next.js%2014-000000?logo=nextdotjs)](https://nextjs.org)
+[![NestJS](https://img.shields.io/badge/backend-NestJS-E0234E?logo=nestjs)](https://nestjs.com)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
+A production-grade distributed code execution platform for securely running untrusted user code inside isolated Docker sandboxes with real-time streaming and collaborative editing.
+
+## Live Demo
+
+| Service | URL |
+|---------|-----|
+| Frontend | https://codex.vercel.app |
+| API | https://api.codex.dev/api/v1 |
+| WebSocket | wss://api.codex.dev/socket.io |
+| Grafana | https://api.codex.dev:3001 (admin/admin123) |
 
 ## Architecture
 
 ```
-┌──────────┐     ┌──────────┐     ┌──────────┐     ┌─────────────┐
-│  Client  │────▶│  API     │────▶│  BullMQ  │────▶│   Worker    │
-│ (Next.js)│     │ Gateway  │     │  (Redis) │     │  (Docker)   │
-└──────────┘     └──────────┘     └──────────┘     └──────┬──────┘
-      │                                                    │
-      │              ┌──────────────┐                      │
-      └──────────────▶  WebSocket   │◀─────────────────────┘
-                     │   Gateway    │
-                     └──────────────┘
+┌──────────────────┐    ┌────────────────────────────────────────────────┐
+│   Vercel         │    │            VPS (Docker Compose)                 │
+│   (Frontend)     │    │                                                │
+│                  │    │  ┌────────┐   ┌────────────┐   ┌───────────┐  │
+│   Next.js 14     │──────▶│ Nginx  │──▶│ API Gateway│──▶│  Redis    │  │
+│   Monaco Editor  │    │  │ (SSL)  │   │ (NestJS)   │   │ (BullMQ)  │  │
+│   Socket.IO      │    │  └────────┘   └────────────┘   └─────┬─────┘  │
+│   TailwindCSS    │    │       │                               │        │
+│                  │    │       ▼                               ▼        │
+│                  │    │  ┌────────────┐   ┌─────────────────────────┐ │
+│                  │    │  │ WS Gateway │   │   Worker(s)             │ │
+│                  │    │  │(Socket.IO) │   │   (BullMQ Consumer)     │ │
+│                  │    │  └────────────┘   │   Docker Sandbox        │ │
+│                  │    │                    │   Python/JS/Go/Java/   │ │
+│                  │    │                    │   C++/Rust             │ │
+│                  │    │                    └─────────────────────────┘ │
+│                  │    └────────────────────────────────────────────────┘
+│                  │                              │
+│                  │                    ┌─────────┴─────────┐
+│                  │                    │                   │
+│                  │              ┌─────┴─────┐       ┌─────┴─────┐
+│                  │              │PostgreSQL │       │ Prometheus │
+│                  │              │           │       │ + Grafana │
+│                  │              └───────────┘       └───────────┘
+└──────────────────┘
 ```
 
 ## Tech Stack
@@ -38,9 +70,10 @@ A production-grade Distributed Code Execution Platform for securely executing un
 
 ### Infrastructure
 - **Containerization:** Docker, Docker Compose
-- **Orchestration:** Kubernetes manifests
 - **Reverse Proxy:** NGINX
-- **CI/CD:** GitHub Actions
+- **CI/CD:** GitHub Actions → Vercel + VPS
+- **Registry:** GitHub Container Registry (ghcr.io)
+- **Monitoring:** Prometheus + Grafana
 
 ## Project Structure
 
@@ -57,11 +90,10 @@ codex-platform/
 │   ├── queue/                # BullMQ setup
 │   └── sandbox/              # Docker sandbox engine
 ├── frontend/                 # Next.js app
-├── prisma/                   # Schema & migrations
 ├── docker/                   # Dockerfiles & configs
 ├── k8s/                      # Kubernetes manifests
-├── scripts/                  # Utility scripts
-└── .github/                  # CI/CD workflows
+├── scripts/                  # Setup & deployment scripts
+└── .github/workflows/        # CI/CD pipelines
 ```
 
 ## Quick Start
@@ -77,7 +109,7 @@ codex-platform/
 
 ```bash
 # 1. Start infrastructure
-docker-compose up -d postgres redis
+docker compose up -d postgres redis
 
 # 2. Install dependencies
 npm install
@@ -107,29 +139,60 @@ make db-seed      # Seed database
 
 ```bash
 # Build and start all services
-docker-compose up -d --build
+docker compose up -d --build
 
 # Services:
 # - API Gateway:     http://localhost:4000
 # - WS Gateway:      http://localhost:4002
 # - PostgreSQL:      localhost:5432
 # - Redis:           localhost:6379
+# - Nginx:           http://localhost:80
 # - Prometheus:      http://localhost:9090
 # - Grafana:         http://localhost:3001 (admin/admin123)
 ```
 
-### Kubernetes Deployment
+## Production Deployment
+
+### VPS Setup (one-time)
 
 ```bash
-kubectl apply -f k8s/namespace.yaml
-kubectl apply -f k8s/secrets.yaml
-kubectl apply -f k8s/postgres/
-kubectl apply -f k8s/redis/
-kubectl apply -f k8s/api-gateway/
-kubectl apply -f k8s/worker/
-kubectl apply -f k8s/ws-gateway/
-kubectl apply -f k8s/monitoring/
+# Provision a fresh Ubuntu VPS, then run:
+sudo ./scripts/setup-vps.sh \
+  --domain api.codex.dev \
+  --email admin@example.com
 ```
+
+This script will:
+1. Install Docker and Docker Compose
+2. Configure firewall (SSH, HTTP, HTTPS)
+3. Clone the repository
+4. Generate JWT secrets and .env file
+5. Obtain SSL certificate via Let's Encrypt
+6. Configure nginx with your domain
+7. Start all services
+8. Set up auto-renewal for SSL
+
+### Deploy Updates
+
+```bash
+./scripts/deploy.sh
+```
+
+Or set up environment variables and let CI/CD handle it automatically:
+- Push to `main` → GitHub Actions builds images → pushes to ghcr.io → deploys to VPS
+
+### Required Secrets (GitHub → Settings → Secrets and variables → Actions)
+
+| Secret | Description |
+|--------|-------------|
+| `VERCEL_TOKEN` | Vercel API token |
+| `VERCEL_ORG_ID` | Vercel team/org ID |
+| `VERCEL_PROJECT_ID` | Vercel project ID |
+| `NEXT_PUBLIC_API_URL` | Backend API URL (e.g., `https://api.codex.dev/api/v1`) |
+| `NEXT_PUBLIC_WS_URL` | Backend WS URL (e.g., `https://api.codex.dev`) |
+| `VPS_HOST` | VPS IP or domain |
+| `VPS_USER` | SSH username (usually `root`) |
+| `VPS_SSH_KEY` | Private SSH key for VPS access |
 
 ## Features
 
@@ -146,14 +209,12 @@ kubectl apply -f k8s/monitoring/
 - Refresh token rotation
 - Role-based access control (User/Admin)
 - Secure password hashing (bcrypt, 12 rounds)
-- Session management
 
 ### Coding Challenges
 - Built-in challenge library
 - Test case management (visible + hidden)
 - Submission scoring engine
 - Leaderboard system
-- Difficulty levels (Easy, Medium, Hard, Expert)
 
 ### Collaboration
 - Real-time collaborative coding rooms
@@ -190,7 +251,6 @@ The platform implements defense-in-depth for executing untrusted code:
 - **No Privileges:** `--security-opt no-new-privileges`
 - **Capability Drop:** All Linux capabilities dropped
 - **PID Limits:** Maximum 50 processes per container
-- **ULimits:** File descriptor and process limits
 - **Auto Cleanup:** Containers and temp files removed after execution
 - **Timeout Enforcement:** Hard execution timeout per language
 
@@ -198,10 +258,10 @@ The platform implements defense-in-depth for executing untrusted code:
 
 ```env
 # Database
-DATABASE_URL=postgresql://codex:codex123@localhost:5432/codex
+DATABASE_URL=postgresql://codex:codex123@postgres:5432/codex
 
 # Redis
-REDIS_URL=redis://localhost:6379
+REDIS_URL=redis://redis:6379
 
 # JWT
 JWT_SECRET=your-secret-key
@@ -216,6 +276,10 @@ MAX_CPU=1
 # BullMQ
 QUEUE_CONCURRENCY=5
 QUEUE_RETRY_ATTEMPTS=3
+
+# Deployment (Vercel)
+NEXT_PUBLIC_API_URL=https://api.codex.dev/api/v1
+NEXT_PUBLIC_WS_URL=https://api.codex.dev
 ```
 
 ## License
