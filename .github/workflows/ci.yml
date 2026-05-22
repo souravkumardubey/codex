@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  packages: write
+
 env:
   REGISTRY: ghcr.io
   IMAGE_TAG: ${{ github.sha }}
@@ -112,7 +116,7 @@ jobs:
     name: Deploy Frontend → Vercel
     runs-on: ubuntu-latest
     needs: [lint]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.VERCEL_TOKEN != ''
     steps:
       - uses: actions/checkout@v4
 
@@ -136,7 +140,7 @@ jobs:
     name: Deploy Backend → VPS
     runs-on: ubuntu-latest
     needs: [docker-build]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.VPS_HOST != ''
     steps:
       - uses: actions/checkout@v4
 
