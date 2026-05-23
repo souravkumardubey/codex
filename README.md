@@ -20,32 +20,107 @@ A production-grade distributed code execution platform for securely running untr
 
 ## Architecture
 
-```
-┌──────────────────┐    ┌────────────────────────────────────────────────┐
-│   Vercel         │    │            VPS (Docker Compose)                 │
-│   (Frontend)     │    │                                                │
-│                  │    │  ┌────────┐   ┌────────────┐   ┌───────────┐  │
-│   Next.js 14     │──────▶│ Nginx  │──▶│ API Gateway│──▶│  Redis    │  │
-│   Monaco Editor  │    │  │ (SSL)  │   │ (NestJS)   │   │ (BullMQ)  │  │
-│   Socket.IO      │    │  └────────┘   └────────────┘   └─────┬─────┘  │
-│   TailwindCSS    │    │       │                               │        │
-│                  │    │       ▼                               ▼        │
-│                  │    │  ┌────────────┐   ┌─────────────────────────┐ │
-│                  │    │  │ WS Gateway │   │   Worker(s)             │ │
-│                  │    │  │(Socket.IO) │   │   (BullMQ Consumer)     │ │
-│                  │    │  └────────────┘   │   Docker Sandbox        │ │
-│                  │    │                    │   Python/JS/Go/Java/   │ │
-│                  │    │                    │   C++/Rust             │ │
-│                  │    │                    └─────────────────────────┘ │
-│                  │    └────────────────────────────────────────────────┘
-│                  │                              │
-│                  │                    ┌─────────┴─────────┐
-│                  │                    │                   │
-│                  │              ┌─────┴─────┐       ┌─────┴─────┐
-│                  │              │PostgreSQL │       │ Prometheus │
-│                  │              │           │       │ + Grafana │
-│                  │              └───────────┘       └───────────┘
-└──────────────────┘
+```mermaid
+graph TB
+    %% Client Layer
+    subgraph Client["Client (Browser)"]
+        FE[Next.js 14 SPA]
+        Monaco[Monaco Editor]
+        SIO[Socket.IO Client]
+    end
+
+    %% Edge / Ingress
+    subgraph Edge["Edge / Ingress"]
+        CF[Cloudflare Tunnel<br/>HTTPS Termination]
+        NGINX[Nginx Reverse Proxy<br/>:80 / :443]
+    end
+
+    %% Application Layer
+    subgraph AppLayer["Application Layer"]
+        API[API Gateway<br/>NestJS :4000<br/>REST · Auth · CRUD · Job Dispatch]
+        WS[WS Gateway<br/>NestJS + Socket.IO :4002<br/>Real-time Streaming · Collab Sync]
+    end
+
+    %% Async Processing Layer
+    subgraph Processing["Async Processing Layer"]
+        QUEUE[BullMQ<br/>Job Queue]
+        WORKER[Worker xN<br/>BullMQ Consumer<br/>Dockerode]
+    end
+
+    %% Sandbox Layer
+    subgraph Sandbox["Sandboxed Execution"]
+        DOCKER[Docker Containers<br/>Read-only rootfs<br/>CPU/Memory/Network limits]
+        PY[Python]
+        JS[Node.js]
+        GO[Go]
+        JAVA[Java]
+        CPP[C++]
+        RUST[Rust]
+    end
+
+    %% Data Layer
+    subgraph DataLayer["Data Layer"]
+        PG[(PostgreSQL<br/>Neon Serverless<br/>Users · Submissions · Challenges)]
+        REDIS[(Redis<br/>Upstash Serverless<br/>BullMQ · PubSub · Sessions)]
+    end
+
+    %% Observability
+    subgraph Monitoring["Observability"]
+        PROM[Prometheus]
+        GRAF[Grafana]
+    end
+
+    %% Connections - Client to Edge
+    FE -->|HTTPS| CF
+    SIO -->|WSS| CF
+    CF --> NGINX
+
+    %% Edge to App
+    NGINX -->|/api/*| API
+    NGINX -->|/socket.io/*| WS
+
+    %% API Gateway flows
+    API -->|Add Job| QUEUE
+    API -->|Read/Write| PG
+    API -->|Session/Cache| REDIS
+
+    %% WS Gateway flows
+    WS -->|Subscribe PubSub| REDIS
+    WS -.->|Auth verify| API
+
+    %% Queue to Worker
+    QUEUE -->|Job Dispatch| WORKER
+
+    %% Worker flows
+    WORKER -->|Create Container| DOCKER
+    WORKER -->|Publish stdout/stderr<br/>via PubSub| REDIS
+    WORKER -->|Update status| PG
+    DOCKER --- PY & JS & GO & JAVA & CPP & RUST
+
+    %% Real-time streaming path
+    REDIS -->|PubSub events| WS
+    WS -->|Stream output| SIO
+
+    %% Monitoring
+    API -.->|metrics| PROM
+    WS -.->|metrics| PROM
+    WORKER -.->|metrics| PROM
+    PROM --> GRAF
+
+    %% Styling
+    classDef client fill:#e3f2fd,stroke:#1565c0
+    classDef edge fill:#fff3e0,stroke:#e65100
+    classDef app fill:#e8f5e9,stroke:#2e7d32
+    classDef processing fill:#fce4ec,stroke:#c62828
+    classDef data fill:#f3e5f5,stroke:#6a1b9a
+    classDef monitor fill:#eceff1,stroke:#37474f
+
+    class FE,Monaco,SIO client
+    class CF,NGINX edge
+    class API,WS app
+    class QUEUE,WORKER,DOCKER,PY,JS,GO,JAVA,CPP,RUST processing
+    class PG,REDIS data
+    class PROM,GRAF monitor
 ```
 
 ## Tech Stack
