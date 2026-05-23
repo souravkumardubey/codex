@@ -5,7 +5,7 @@
 [![Docker](https://img.shields.io/badge/docker-compose-2496ED?logo=docker)](https://docs.docker.com/compose)
 [![Next.js](https://img.shields.io/badge/frontend-Next.js%2014-000000?logo=nextdotjs)](https://nextjs.org)
 [![NestJS](https://img.shields.io/badge/backend-NestJS-E0234E?logo=nestjs)](https://nestjs.com)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![License: All Rights Reserved](https://img.shields.io/badge/license-All%20Rights%20Reserved-red)](LICENSE)
 
 A production-grade distributed code execution platform for securely running untrusted user code inside isolated Docker sandboxes with real-time streaming and collaborative editing.
 
@@ -359,4 +359,4 @@ NEXT_PUBLIC_WS_URL=https://api.codex.dev
 
 ## License
 
-MIT
+All Rights Reserved. See [LICENSE](LICENSE) for details.
