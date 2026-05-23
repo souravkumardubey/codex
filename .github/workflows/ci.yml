@@ -116,7 +116,7 @@ jobs:
     name: Deploy Frontend → Vercel
     runs-on: ubuntu-latest
     needs: [lint]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.VERCEL_TOKEN != ''
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
 
@@ -124,6 +124,7 @@ jobs:
         run: npm install -g vercel
 
       - name: Deploy to Vercel
+        if: secrets.VERCEL_TOKEN != ''
         run: |
           vercel deploy \
             --token "${{ secrets.VERCEL_TOKEN }}" \
@@ -140,11 +141,12 @@ jobs:
     name: Deploy Backend → VPS
     runs-on: ubuntu-latest
     needs: [docker-build]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.VPS_HOST != ''
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
 
       - name: Deploy via SSH
+        if: secrets.VPS_HOST != ''
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -174,6 +176,7 @@ jobs:
             docker compose exec -T api-gateway npx prisma migrate deploy || true
 
       - name: Verify health
+        if: secrets.VPS_HOST != ''
         run: |
           sleep 10
           for i in {1..10}; do
