@@ -124,13 +124,16 @@ jobs:
         run: npm install -g vercel
 
       - name: Deploy to Vercel
-        if: secrets.VERCEL_TOKEN != ''
         run: |
+          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
+            echo "VERCEL_TOKEN not set, skipping"
+            exit 0
+          fi
           vercel deploy \
             --token "${{ secrets.VERCEL_TOKEN }}" \
             --prod \
             --scope "${{ secrets.VERCEL_ORG_ID }}" \
-            --confirm
+            --yes
         working-directory: ./frontend
         env:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
@@ -145,8 +148,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check VPS secrets
+        id: check
+        run: |
+          if [ -n "${{ secrets.VPS_HOST }}" ]; then
+            echo "configured=true" >> $GITHUB_OUTPUT
+          else
+            echo "configured=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Deploy via SSH
-        if: secrets.VPS_HOST != ''
+        if: steps.check.outputs.configured == 'true'
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -176,8 +188,11 @@ jobs:
             docker compose exec -T api-gateway npx prisma migrate deploy || true
 
       - name: Verify health
-        if: secrets.VPS_HOST != ''
         run: |
+          if [ -z "${{ secrets.VPS_HOST }}" ]; then
+            echo "VPS_HOST not set, skipping"
+            exit 0
+          fi
           sleep 10
           for i in {1..10}; do
             if curl -sf "https://${{ secrets.VPS_HOST }}/health" > /dev/null 2>&1; then
